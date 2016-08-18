@@ -26,8 +26,15 @@ function getRandomByRange(limit1,limit2){
 function get30DegRandom(){
   return Math.ceil(Math.random()*60)-30;
 }
+
+/**
+ * 图片组件
+ */
 class ImgFigure extends React.Component {
 
+  /**
+   * 点击响应函数
+   */
   handleClick =(e)=>{
     if (this.props.arrange.isCenter) {
       this.props.inverse();
@@ -46,8 +53,8 @@ class ImgFigure extends React.Component {
 
     //添加旋转角度
     this.props.arrange.rotate&&(
-      ['-moz-','-ms-','-webkit-',''].forEach(function(v){
-        styleObj[v+'transform'] = 'rotate('+this.props.arrange.rotate +'deg)';
+      ['MozTransform','MsTransform','WebkitTransform','transform'].forEach(function(v){
+        styleObj[v] = 'rotate('+this.props.arrange.rotate +'deg)';
       }.bind(this))
     );
 
@@ -72,12 +79,35 @@ class ImgFigure extends React.Component {
       </figure>
     );
   }
+}
 
-  /**
-   * 点击相应函数
-   */
+/**
+ *控制栏组件
+ */
+class ControllerUnit extends React.Component {
+  handleClick = (e) => {
+    if(this.props.arrange.isCenter){
+      this.props.inverse();
+    }else{
+      this.props.center();
+    }
+    e.stopPropagation();
+    e.preventDefault();
+  };
+  render(){
+    let controllerUnitClassName = 'controller-unit';
+    if(this.props.arrange.isCenter){
+      controllerUnitClassName += ' is-center';
+      if(this.props.arrange.isInverse){
+        controllerUnitClassName += ' is-inverse';
+      }
+    }
+
+    return (<span className={controllerUnitClassName} onClick={this.handleClick}></span>)
+  }
 }
 class GalleryByReactApp extends React.Component {
+
   //构建方法,定义实例属性
   constructor() {
     super();
@@ -103,7 +133,7 @@ class GalleryByReactApp extends React.Component {
 
   //组件加载后,为每张图片计算其位置的范围
   componentDidMount(){
-    console.log('inner didMount');
+
     //首先拿到舞台的大小
     var stageDom = ReactDOM.findDOMNode(this.refs.stage),
       stageW = stageDom.scrollWidth,
@@ -115,11 +145,13 @@ class GalleryByReactApp extends React.Component {
       imgH = imgFigureDOM.scrollHeight,
       halfImgW = Math.ceil(imgW / 2),
       halfImgH = Math.ceil(imgH / 2);
+
     //计算中心图片的位置
     this.Constant.centerPos = {
       left:halfStageW - halfImgW,
       top:halfStageH - halfImgH
     };
+
     //计算左侧,右侧区域图片排布位置的取值范围
     this.Constant.hPosRange.leftSecX[0] = -halfImgW;
     this.Constant.hPosRange.leftSecX[1] = halfStageW - halfImgW * 3;
@@ -152,11 +184,8 @@ class GalleryByReactApp extends React.Component {
         }
       );
       let inverseFn = ()=>{
-        console.log('index--->'+index);
         var imgsArrangeArr = this.state.imgsArrangeArr;
-
         imgsArrangeArr[index].isInverse = !imgsArrangeArr[index].isInverse;
-
         this.setState({
           imgsArrangeArr: imgsArrangeArr
         });
@@ -166,6 +195,7 @@ class GalleryByReactApp extends React.Component {
       };
       imgFigures.push(<ImgFigure data={value} key={'figure_'+index} ref={'figure_'+index}
                                  arrange={this.state.imgsArrangeArr[index]} inverse={inverseFn} center={centerFn}/>);
+      controllerUnits.push(<ControllerUnit arrange={this.state.imgsArrangeArr[index]}  key={'unit_'+index} inverse={inverseFn} center={centerFn}/>);
     }.bind(this));
     return (
       <section className="stage" ref="stage">
@@ -173,7 +203,7 @@ class GalleryByReactApp extends React.Component {
           {imgFigures}
         </section>
         <nav className="controller-nav">
-          <controllerUnits/>
+          {controllerUnits}
         </nav>
       </section>
     );
@@ -208,10 +238,9 @@ class GalleryByReactApp extends React.Component {
     //取出要布局上侧的图片的状态信息
     topImgSpliceIndex = Math.ceil(Math.random()*(imgsArrangeArr.length-topImgNum));
     imgsArrangeTopArr = imgsArrangeArr.splice(topImgSpliceIndex,topImgNum);
-    console.log('rearange--->'+topImgNum);
 
     //布局位于上侧的图片
-    imgsArrangeTopArr = imgsArrangeTopArr.map((v,i)=>{
+    imgsArrangeTopArr = imgsArrangeTopArr.map(()=>{
       return {
         pos:{
           top:getRandomByRange(vPosRangeTopY[0],vPosRangeTopY[1]),
@@ -221,8 +250,6 @@ class GalleryByReactApp extends React.Component {
         isCenter:false
       }
     });
-    console.log('imgsArrangeTopArr---');
-    console.log(imgsArrangeTopArr);
 
     //布局两侧的图片
     for(let i = 0, j = imgsArrangeArr.length, k = j / 2; i<j; i++){
